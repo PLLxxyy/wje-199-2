@@ -126,7 +126,7 @@ const App: React.FC = () => {
         <AddExpenseModal
           onSubmit={add}
           onClose={() => setShowAdd(false)}
-          categoryTotals={categoryTotals}
+          getCategoryTotals={getCategoryTotal}
           budgets={data.budgets}
         />
       )}
