@@ -13,7 +13,7 @@ const CURRENT_MONTH = now.getMonth() + 1;
 
 const App: React.FC = () => {
   const {
-    data, add, remove, setRoommates, clearAll,
+    data, add, remove, setRoommates, setCategoryBudget, clearAll,
     getMonthExpenses, getMonthTotal, getCategoryTotal,
     getYearTotal, getMonthlyTotals,
   } = useExpenses();
@@ -82,6 +82,7 @@ const App: React.FC = () => {
           categoryTotals={categoryTotals}
           expenses={monthExpenses}
           roommates={data.roommates}
+          budgets={data.budgets}
           onAddClick={() => setShowAdd(true)}
           onDelete={remove}
         />
@@ -112,7 +113,9 @@ const App: React.FC = () => {
       {tab === 'settings' && (
         <SettingsPage
           roommates={data.roommates}
+          budgets={data.budgets}
           onSetRoommates={setRoommates}
+          onSetBudget={setCategoryBudget}
           onClearAll={clearAll}
         />
       )}
@@ -123,6 +126,8 @@ const App: React.FC = () => {
         <AddExpenseModal
           onSubmit={add}
           onClose={() => setShowAdd(false)}
+          categoryTotals={categoryTotals}
+          budgets={data.budgets}
         />
       )}
     </div>

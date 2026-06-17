@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Expense, AppData, getMonthKey } from '../types/Expense';
-import { loadData, saveData, addExpense, deleteExpense, generateId } from '../utils/storage';
+import { Expense, AppData, getMonthKey, DEFAULT_BUDGETS } from '../types/Expense';
+import { loadData, saveData, addExpense, deleteExpense, generateId, setBudget } from '../utils/storage';
 
 export function useExpenses() {
   const [data, setData] = useState<AppData>(() => loadData());
@@ -38,8 +38,15 @@ export function useExpenses() {
     }));
   }, []);
 
+  const setCategoryBudget = useCallback((categoryId: string, amount: number) => {
+    setData(prev => ({
+      ...prev,
+      budgets: setBudget(prev.budgets, categoryId, amount),
+    }));
+  }, []);
+
   const clearAll = useCallback(() => {
-    setData({ expenses: [], roommates: 2 });
+    setData({ expenses: [], roommates: 2, budgets: { ...DEFAULT_BUDGETS } });
   }, []);
 
   const getMonthExpenses = useCallback((year: number, month: number): Expense[] => {
@@ -82,6 +89,7 @@ export function useExpenses() {
     add,
     remove,
     setRoommates,
+    setCategoryBudget,
     clearAll,
     getMonthExpenses,
     getMonthTotal,

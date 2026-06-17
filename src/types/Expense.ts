@@ -31,7 +31,18 @@ export function getCategoryById(id: string): Category {
 export interface AppData {
   expenses: Expense[];
   roommates: number;
+  budgets: Record<string, number>;
 }
+
+export const DEFAULT_BUDGETS: Record<string, number> = {
+  rent: 3000,
+  water: 100,
+  electric: 200,
+  gas: 100,
+  internet: 100,
+  property: 200,
+  other: 500,
+};
 
 export function getMonthKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;

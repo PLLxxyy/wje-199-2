@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
-import { CATEGORIES, getTodayStr } from '../types/Expense';
+import React, { useState, useMemo } from 'react';
+import { CATEGORIES, getTodayStr, getCategoryById } from '../types/Expense';
 
 interface AddExpenseModalProps {
   onSubmit: (category: string, amount: number, note: string, date: string) => void;
   onClose: () => void;
+  categoryTotals: Record<string, number>;
+  budgets: Record<string, number>;
 }
 
-export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ onSubmit, onClose }) => {
+export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
+  onSubmit, onClose, categoryTotals, budgets,
+}) => {
   const [category, setCategory] = useState(CATEGORIES[0].id);
   const [amountStr, setAmountStr] = useState('');
   const [note, setNote] = useState('');
@@ -15,11 +19,24 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ onSubmit, onCl
   const amount = parseFloat(amountStr) || 0;
   const valid = amount > 0;
 
+  const budgetInfo = useMemo(() => {
+    const cat = getCategoryById(category);
+    const budget = budgets[category] || 0;
+    const currentTotal = categoryTotals[category] || 0;
+    const newTotal = currentTotal + amount;
+    const isOver = budget > 0 && newTotal > budget;
+    const percent = budget > 0 ? Math.min((newTotal / budget) * 100, 100) : 0;
+    const remaining = budget > 0 ? budget - currentTotal : 0;
+    return { cat, budget, currentTotal, newTotal, isOver, percent, remaining };
+  }, [category, amount, categoryTotals, budgets]);
+
   const handleSubmit = () => {
     if (!valid) return;
     onSubmit(category, amount, note.trim(), date);
     onClose();
   };
+
+  const formatAmount = (v: number) => v.toFixed(v % 1 === 0 ? 0 : 2);
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -56,6 +73,28 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ onSubmit, onCl
               autoFocus
             />
           </div>
+          {budgetInfo.budget > 0 && (
+            <div className={`budget-hint ${budgetInfo.isOver ? 'budget-hint-over' : ''}`}>
+              <div className="budget-hint-row">
+                <span>本月已用 ¥{formatAmount(budgetInfo.currentTotal)}</span>
+                <span>预算 ¥{formatAmount(budgetInfo.budget)}</span>
+              </div>
+              <div className="budget-hint-progress">
+                <div
+                  className="budget-hint-progress-fill"
+                  style={{
+                    width: `${budgetInfo.percent}%`,
+                    background: budgetInfo.isOver ? 'var(--danger)' : budgetInfo.cat.color,
+                  }}
+                />
+              </div>
+              <div className="budget-hint-text">
+                {budgetInfo.isOver
+                  ? `⚠️ 超出预算 ¥${formatAmount(budgetInfo.newTotal - budgetInfo.budget)}`
+                  : `还可使用 ¥${formatAmount(Math.max(0, budgetInfo.remaining - amount))}`}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="form-row">

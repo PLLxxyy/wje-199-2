@@ -11,6 +11,7 @@ interface HomePageProps {
   categoryTotals: Record<string, number>;
   expenses: Expense[];
   roommates: number;
+  budgets: Record<string, number>;
   onAddClick: () => void;
   onDelete: (id: string) => void;
 }
@@ -18,7 +19,7 @@ interface HomePageProps {
 export const HomePage: React.FC<HomePageProps> = ({
   year, month, onPrevMonth, onNextMonth,
   monthTotal, categoryTotals, expenses,
-  roommates, onAddClick, onDelete,
+  roommates, budgets, onAddClick, onDelete,
 }) => {
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [showSplit, setShowSplit] = useState(false);
@@ -27,14 +28,27 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const categoryItems = useMemo(() => {
     return CATEGORIES
-      .map(cat => ({
-        ...cat,
-        total: categoryTotals[cat.id] || 0,
-        count: expenses.filter(e => e.category === cat.id).length,
-      }))
+      .map(cat => {
+        const total = categoryTotals[cat.id] || 0;
+        const budget = budgets[cat.id] || 0;
+        const percent = budget > 0 ? Math.min((total / budget) * 100, 100) : 0;
+        const isOver = budget > 0 && total > budget;
+        return {
+          ...cat,
+          total,
+          budget,
+          percent,
+          isOver,
+          count: expenses.filter(e => e.category === cat.id).length,
+        };
+      })
       .filter(item => item.total > 0)
       .sort((a, b) => b.total - a.total);
-  }, [categoryTotals, expenses]);
+  }, [categoryTotals, expenses, budgets]);
+
+  const overBudgetItems = useMemo(() => {
+    return categoryItems.filter(item => item.isOver);
+  }, [categoryItems]);
 
   const perPerson = roommates > 0 ? monthTotal / roommates : 0;
 
@@ -67,12 +81,29 @@ export const HomePage: React.FC<HomePageProps> = ({
         {/* Category breakdown */}
         {categoryItems.length > 0 ? (
           <>
+            {overBudgetItems.length > 0 && (
+              <div className="over-budget-alert">
+                <div className="over-budget-title">
+                  <span className="over-budget-icon">⚠️</span>
+                  <span>本月超支提醒</span>
+                </div>
+                <div className="over-budget-list">
+                  {overBudgetItems.map(item => (
+                    <div key={item.id} className="over-budget-item">
+                      <span>{item.icon} {item.name}</span>
+                      <span className="over-budget-amount">超 ¥{formatAmount(item.total - item.budget)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="section-title">分类明细</div>
             <div className="cat-card">
               {categoryItems.map(item => (
                 <React.Fragment key={item.id}>
                   <div
-                    className="cat-item"
+                    className={`cat-item ${item.isOver ? 'cat-item-over' : ''}`}
                     onClick={() => setExpandedCat(expandedCat === item.id ? null : item.id)}
                   >
                     <div
@@ -82,10 +113,35 @@ export const HomePage: React.FC<HomePageProps> = ({
                       {item.icon}
                     </div>
                     <div className="cat-info">
-                      <div className="cat-name">{item.name}</div>
-                      <div className="cat-count">{item.count}笔</div>
+                      <div className="cat-name-row">
+                        <span className="cat-name">{item.name}</span>
+                        {item.isOver && <span className="cat-over-badge">超支</span>}
+                      </div>
+                      <div className="cat-count">{item.count}笔 · 预算 ¥{formatAmount(item.budget)}</div>
+                      {item.budget > 0 && (
+                        <div className="cat-progress-bar">
+                          <div
+                            className="cat-progress-fill"
+                            style={{
+                              width: `${item.percent}%`,
+                              background: item.isOver ? 'var(--danger)' : item.color,
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="cat-amount">¥{formatAmount(item.total)}</div>
+                    <div className="cat-amount-wrap">
+                      <div className={`cat-amount ${item.isOver ? 'cat-amount-over' : ''}`}>
+                        ¥{formatAmount(item.total)}
+                      </div>
+                      {item.budget > 0 && (
+                        <div className="cat-budget-info">
+                          {item.isOver
+                            ? `超支 ¥${formatAmount(item.total - item.budget)}`
+                            : `剩余 ¥${formatAmount(item.budget - item.total)}`}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   {expandedCat === item.id && groupedExpenses.length > 0 && (
                     <>

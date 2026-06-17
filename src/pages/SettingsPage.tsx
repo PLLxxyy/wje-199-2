@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
+import { CATEGORIES } from '../types/Expense';
 
 interface SettingsPageProps {
   roommates: number;
+  budgets: Record<string, number>;
   onSetRoommates: (n: number) => void;
+  onSetBudget: (categoryId: string, amount: number) => void;
   onClearAll: () => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
-  roommates, onSetRoommates, onClearAll,
+  roommates, budgets, onSetRoommates, onSetBudget, onClearAll,
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const formatAmount = (v: number) => v.toFixed(v % 1 === 0 ? 0 : 2);
 
   return (
     <div className="page">
@@ -35,6 +40,41 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               >+</button>
             </div>
           </div>
+        </div>
+
+        <div className="section-title" style={{ marginTop: 24 }}>分类预算</div>
+        <div className="settings-card">
+          {CATEGORIES.map((cat, index) => (
+            <div
+              key={cat.id}
+              className="settings-item"
+              style={{ borderBottom: index === CATEGORIES.length - 1 ? 'none' : undefined }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  className="cat-icon"
+                  style={{ background: cat.color + '18', width: 36, height: 36, fontSize: 18 }}
+                >
+                  {cat.icon}
+                </div>
+                <div>
+                  <div className="settings-label">{cat.name}</div>
+                  <div className="settings-desc">每月预算额度</div>
+                </div>
+              </div>
+              <div className="budget-input-wrapper">
+                <span className="budget-currency">¥</span>
+                <input
+                  type="number"
+                  className="budget-input"
+                  value={budgets[cat.id] || 0}
+                  onChange={(e) => onSetBudget(cat.id, parseFloat(e.target.value) || 0)}
+                  min="0"
+                  step="10"
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="section-title" style={{ marginTop: 24 }}>数据管理</div>
